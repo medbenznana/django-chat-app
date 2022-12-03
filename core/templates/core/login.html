@@ -1,0 +1,48 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Log in | {% endblock %}
+
+{% block content %}
+    <section class="login-card">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-10 col-xl-9 mx-auto">
+                    <div class="card flex-row my-5 border-0 shadow rounded-3 overflow-hidden">
+                        <div class="card-body p-4 p-sm-5">
+                            <h2 class="card-title text-center mb-5 fw-light fs-5">Log in</h2>
+                            <form method="post" action=".">
+                                {% csrf_token %}
+                                {% if form.errors %}
+                                    {% for field in form %}
+                                        {% for error in field.errors %}
+                                            <div class="alert alert-danger" role="alert">
+                                                {{ error|escape }}
+                                            </div>
+                                        {% endfor %}
+                                    {% endfor %}
+                                {% endif %}
+                                <div class="form-floating mb-3">
+                                    <label for="floatingInputUsername">Username</label>
+                                    <input type="text" class="form-control" name="username" id="floatingInputUsername"
+                                           required autofocus>
+                                </div>
+                                <div class="form-floating mb-3">
+                                    <label for="floatingPassword">Password</label>
+                                    <input type="password" class="form-control" name="password" id="floatingPassword" required>
+                                </div>
+                                <div class="d-grid mb-2">
+                                    <button class="btn btn-lg btn-primary btn-login fw-bold text-uppercase">
+                                        Log in
+                                    </button>
+                                </div>
+                                <p class="d-block text-center mt-2 small">
+                                    Don't have account yet? <a href="/signup/" tabindex="-1">Register</a>
+                                </p>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+{% endblock %}

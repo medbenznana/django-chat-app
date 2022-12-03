@@ -1,0 +1,139 @@
+{% extends 'core/base.html' %}
+
+{% block title %}{{ room.name }} | {% endblock %}
+
+{% block content %}
+    <section class="details-chat">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-12">
+                    <form method="post" action="." class="flex">
+                        {% csrf_token %}
+                        <div class="--light-theme" id="chat">
+                            <h2 class="text-center text-white">{{ room.name }}</h2>
+                            <hr>
+                            <div class="chat__conversation-board chat-messages" id="chat-messages">
+                                {% for m in messages %}
+                                    <div class="chat__conversation-board__message-container">
+                                        <div class="chat__conversation-board__message__person">
+                                            <span class="chat__conversation-board__message__person__nickname"><b>{{ m.user.username }}</b></span>
+                                        </div>
+                                        <div class="chat__conversation-board__message__context">
+                                            <div class="chat__conversation-board__message__bubble">
+                                                <span>{{ m.content }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                            <div class="chat__conversation-panel">
+                                <div class="chat__conversation-panel__container">
+                                    <input type="text" name="content" class="chat__conversation-panel__input panel-item" placeholder="Type a message..." id="chat-message-input">
+                                    <button class="chat__conversation-panel__button panel-item btn-icon send-message-button" id="chat-message-submit">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                                             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                             aria-hidden="true" data-reactid="1036">
+                                            <line x1="22" y1="2" x2="11" y2="13"></line>
+                                            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+{% endblock %}
+
+{% block scripts %}
+{{ room.slug|json_script:"json-roomname" }}
+{{ request.user.username|json_script:"json-username" }}
+
+<script>
+    $(document).ready(function () {
+        const roomName = JSON.parse(document.getElementById('json-roomname').textContent);
+        const userName = JSON.parse(document.getElementById('json-username').textContent);
+        const chatSocket = new WebSocket(
+            'ws://'
+            + window.location.host
+            + '/ws/'
+            + roomName
+            + '/'
+        );
+
+        chatSocket.onclose = function (e) {
+            console.log('onclose')
+        }
+
+        chatSocket.onmessage = function (e) {
+            const data = JSON.parse(e.data);
+
+            if (data.message) {
+                var html_content = '<div class="chat__conversation-board__message-container">' +
+                                        '<div class="chat__conversation-board__message__person">' +
+                                            '<span class="chat__conversation-board__message__person__nickname">' +
+                                                '<b>'+ data.username +'</b></span>' +
+                                        '</div>' +
+                                        '<div class="chat__conversation-board__message__context">' +
+                                            '<div class="chat__conversation-board__message__bubble">' +
+                                                '<span>'+ data.message +'</span>' +
+                                            '</div>' +
+                                        '</div>' +
+                                    '</div>';
+
+                $('#chat-messages').append(html_content);
+            } else {
+                alert('The message was empty!')
+            }
+
+            scrollToBottom();
+        };
+
+        let messageInputDom = $('#chat-message-input');
+
+        function send_message() {
+            const message = messageInputDom.val();
+
+            console.log({
+                'message': message,
+                'username': userName,
+                'room': roomName
+            })
+
+            chatSocket.send(JSON.stringify({
+                'message': message,
+                'username': userName,
+                'room': roomName
+            }));
+
+            messageInputDom.val('');
+        }
+
+        messageInputDom.focus();
+        messageInputDom.keydown(function (event) {
+            if (event.ctrlKey) {
+                send_message();
+            }
+        });
+
+        $('#chat-message-submit').on('click', function (e) {
+            e.preventDefault();
+            send_message();
+            return false
+        });
+
+        /**
+         * A function for finding the messages element, and scroll to the bottom of it.
+         */
+        function scrollToBottom() {
+            let objDiv = document.getElementById("chat-messages");
+            objDiv.scrollTop = objDiv.scrollHeight;
+        }
+
+        // Add this below the function to trigger the scroll on load.
+        scrollToBottom();
+    });
+</script>
+{% endblock %}
